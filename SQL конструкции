@@ -1,0 +1,96 @@
+ТРИГГЕР
+  Создание таблицы GradeLog
+CREATE TABLE IF NOT EXISTS GradeLog (
+    id SERIAL PRIMARY KEY,
+    student_id INT NOT NULL,
+    subject_id INT NOT NULL,
+    grade INT NOT NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_student FOREIGN KEY (student_id) REFERENCES Students(id) ON DELETE CASCADE,
+    CONSTRAINT fk_subject FOREIGN KEY (subject_id) REFERENCES Subjects(id) ON DELETE CASCADE
+);
+
+Создание функции триггера LogGradeInsert
+CREATE OR REPLACE FUNCTION LogGradeInsert()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO GradeLog (student_id, subject_id, grade, timestamp)
+    VALUES (NEW.student_id, NEW.subject_id, NEW.grade, CURRENT_TIMESTAMP);
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+Создание триггера after_grade_insert
+CREATE TRIGGER after_grade_insert
+AFTER INSERT ON Grades
+FOR EACH ROW
+EXECUTE FUNCTION LogGradeInsert();
+SELECT * FROM Grades;
+
+
+ функция средняя оценка
+DELIMITER //
+
+CREATE FUNCTION GetStudentAverageGrade(student_id INT)
+RETURNS NUMERIC
+BEGIN
+    DECLARE avg_grade NUMERIC;
+    SELECT AVG(grade) INTO avg_grade
+    FROM Grades
+    WHERE student_id = student_id;
+    RETURN avg_grade;
+END //
+
+DELIMITER ;
+SELECT GetStudentAverageGrade(1);
+
+
+
+
+
+Курсор – Список учителей и их предметов
+CREATE OR REPLACE PROCEDURE ListTeachersSubjects()
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    teacher_name VARCHAR(50);
+    subject_name VARCHAR(50);
+    teacher_cursor CURSOR FOR
+        SELECT t.first_name, t.last_name, s.name
+        FROM Teachers t
+        JOIN Subjects s ON t.subject_id = s.id;
+BEGIN
+    OPEN teacher_cursor;
+
+    LOOP
+        FETCH teacher_cursor INTO teacher_name, subject_name;
+        EXIT WHEN NOT FOUND;
+        RAISE NOTICE '% преподает %', teacher_name, subject_name;
+    END LOOP;
+
+    CLOSE teacher_cursor;
+END;
+$$;                                                                                                                                                                  
+
+Условные операторы — Проверка, существует ли студент с заданным ID
+DELIMITER //
+
+CREATE PROCEDURE CheckStudentExists(IN student_id INT)
+BEGIN
+    DECLARE student_name VARCHAR(100);
+
+    -- Проверка, существует ли студент с данным ID
+    SELECT name INTO student_name
+    FROM Students
+    WHERE id = student_id;
+
+    IF student_name IS NOT NULL THEN
+        RAISE NOTICE 'Студент существует: %', student_name;
+    ELSE
+        RAISE NOTICE 'Студент с ID % не найден', student_id;
+    END IF;
+END //
+
+DELIMITER ;
+CALL CheckStudentExists(1);
+
