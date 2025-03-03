@@ -1,0 +1,22 @@
+CREATE OR REPLACE PROCEDURE ListTeachersSubjects()
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    teacher_name VARCHAR(50);
+    subject_name VARCHAR(50);
+    teacher_cursor CURSOR FOR
+        SELECT t.first_name, t.last_name, s.name
+        FROM Teachers t
+        JOIN Subjects s ON t.subject_id = s.id;
+BEGIN
+    OPEN teacher_cursor;
+
+    LOOP
+        FETCH teacher_cursor INTO teacher_name, subject_name;
+        EXIT WHEN NOT FOUND;
+        RAISE NOTICE '% преподает %', teacher_name, subject_name;
+    END LOOP;
+
+    CLOSE teacher_cursor;
+END;
+$$;   
