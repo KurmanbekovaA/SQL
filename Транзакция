@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS journal_transactions (
+    id SERIAL PRIMARY KEY,
+    transaction_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    action VARCHAR(255),
+    details TEXT
+);
+START TRANSACTION;
+INSERT INTO grades (student_id, subject, grade)
+VALUES (3, 'Математика', 5);
+INSERT INTO journal_transactions (action, details)
+VALUES ('Добавление оценки', 'Ученик ID 3 получил оценку 5 по Математике');
+COMMIT;
